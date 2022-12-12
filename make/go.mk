@@ -169,12 +169,12 @@ go-mod-upgrade: install-tool.golang install-tool.go.go-mod-upgrade ; $(info $(M)
 
 .PHONY: build-e2e-images
 build-e2e-images:
-	docker buildx build -f ./test/e2e/testdata/dockerfiles/Dockerfile.alpine \
+	docker buildx build --load -f ./test/e2e/testdata/dockerfiles/Dockerfile.alpine \
 							 -t d2iq-labs/csi-driver-trusted-ca-test:alpine \
 							 ./test/e2e/testdata/dockerfiles
-	docker buildx build -f ./test/e2e/testdata/dockerfiles/Dockerfile.debian \
+	docker buildx build --load -f ./test/e2e/testdata/dockerfiles/Dockerfile.debian \
 							 -t d2iq-labs/csi-driver-trusted-ca-test:debian \
 							 ./test/e2e/testdata/dockerfiles
-	docker buildx build -f ./test/e2e/testdata/dockerfiles/Dockerfile.ubi \
+	docker buildx build --load -f ./test/e2e/testdata/dockerfiles/Dockerfile.ubi \
 							 -t d2iq-labs/csi-driver-trusted-ca-test:redhat \
 							 ./test/e2e/testdata/dockerfiles
