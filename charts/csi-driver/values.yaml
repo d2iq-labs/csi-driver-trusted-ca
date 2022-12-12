@@ -1,0 +1,69 @@
+# Copyright 2022 D2iQ, Inc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+image:
+  # -- Target image repository.
+  repository: d2iq-labs/csi-driver-trusted-ca
+  # -- Target image version tag.
+  tag:
+  # -- Kubernetes imagePullPolicy on csi-driver.
+  pullPolicy: IfNotPresent
+
+# -- Optional secrets used for pulling the csi-driver container image
+imagePullSecrets: []
+#- name: Secret with Registry credentials
+
+nodeDriverRegistrarImage:
+  # -- Target image repository.
+  repository: k8s.gcr.io/sig-storage/csi-node-driver-registrar
+  # -- Target image version tag.
+  tag: v2.5.0
+  # -- Kubernetes imagePullPolicy on node-driver.
+  pullPolicy: IfNotPresent
+
+livenessProbeImage:
+  # -- Target image repository.
+  repository: k8s.gcr.io/sig-storage/livenessprobe
+  # -- Target image version tag.
+  tag: v2.6.0
+  # -- Kubernetes imagePullPolicy on liveness probe.
+  pullPolicy: IfNotPresent
+
+app:
+  # -- Verbosity of csi-driver-trusted-ca logging.
+  logLevel: 1 # 1-5
+  # -- Options for CSI driver
+  driver:
+    # -- Name of the driver which will be registered with Kubernetes.
+    name: trusted-ca.csi.labs.d2iq.com
+    # -- Configures the hostPath directory that the driver will write and mount volumes from.
+    csiDataDir: /tmp/csi-driver-trusted-ca
+  # -- Options for the liveness container.
+  livenessProbe:
+    # -- The port that will expose the livness of the csi-driver
+    port: 9809
+  # -- Overrides path to root kubelet directory in case of a non-standard k8s install.
+  kubeletRootDir: /var/lib/kubelet
+
+resources: {}
+  # -- Kubernetes pod resource limits for csi-driver-trusted-ca
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # -- Kubernetes pod memory resource requests for csi-driver-trusted-ca
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+  # -- Kubernetes node selector: node labels for pod assignment
+  # Allow scheduling of DaemonSet on linux nodes only
+  # kubernetes.io/os: linux
+
+tolerations: []
+  # -- Kubernetes pod tolerations for csi-driver-trusted-ca
+  # Allow scheduling of DaemonSet on all nodes
+  # - operator: "Exists"
+
+# -- Optional priority class to be used for the csi-driver pods.
+priorityClassName: ""

@@ -1,0 +1,17 @@
+# Copyright 2022 D2iQ, Inc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+{{ include "csi-driver-trusted-ca.labels" . | indent 4 }}
+  name: {{ include "csi-driver-trusted-ca.name" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "csi-driver-trusted-ca.name" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "csi-driver-trusted-ca.name" . }}
+  namespace: {{ .Release.Namespace }}

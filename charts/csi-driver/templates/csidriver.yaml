@@ -1,0 +1,17 @@
+# Copyright 2022 D2iQ, Inc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if .Capabilities.APIVersions.Has "storage.k8s.io/v1/CSIDriver" }}
+apiVersion: storage.k8s.io/v1
+{{- else }}
+apiVersion: storage.k8s.io/v1beta1
+{{- end }}
+kind: CSIDriver
+metadata:
+  name: {{ .Values.app.driver.name }}
+  labels:
+{{ include "csi-driver-trusted-ca.labels" . | indent 4 }}
+spec:
+  podInfoOnMount: true
+  volumeLifecycleModes:
+  - Ephemeral

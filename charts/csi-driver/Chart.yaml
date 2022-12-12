@@ -1,0 +1,19 @@
+# Copyright 2022 D2iQ, Inc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+
+name: csi-driver-trusted-ca
+type: application
+description: A Helm chart for csi-driver-trusted-ca
+
+home: https://github.com/d2iq-labs/csi-driver-trusted-ca
+maintainers:
+- name: Jimmi Dyson
+  email: jimmidyson@gmail.com
+  url: https://eng.d2iq.com
+sources:
+- https://github.com/d2iq-labs/csi-driver-trusted-ca
+
+appVersion: v0.0.0-dev
+version: v0.0.0-dev
