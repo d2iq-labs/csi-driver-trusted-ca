@@ -18,7 +18,7 @@ require (
 	k8s.io/client-go v0.26.0
 	k8s.io/component-base v0.26.0
 	k8s.io/klog/v2 v2.80.1
-	k8s.io/mount-utils v0.25.3
+	k8s.io/mount-utils v0.26.0
 	sigs.k8s.io/controller-runtime v0.13.1
 )
 
