@@ -58,14 +58,21 @@ func (ns *nodeServer) NodePublishVolume(
 		)
 	}
 
-	if registered, err := ns.store.RegisterMetadata(meta); err != nil {
+	registered, err := ns.store.RegisterMetadata(meta)
+	if err != nil {
 		return nil, err
+	}
+	if registered {
+		log.Info("Registered new volume with storage backend")
 	} else {
-		if registered {
-			log.Info("Registered new volume with storage backend")
-		} else {
-			log.Info("Volume already registered with storage backend")
+		log.Info("Volume already registered with storage backend")
+	}
+
+	if !ns.manager.IsVolumeReady(req.GetVolumeId()) {
+		if _, err := ns.manager.ManageVolumeImmediate(ctx, req.GetVolumeId()); err != nil {
+			return nil, err
 		}
+		log.Info("Volume registered for management")
 	}
 
 	log.Info("Ensuring data directory for volume is mounted into pod...")

@@ -1,0 +1,10 @@
+# Copyright 2022 D2iQ, Inc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# syntax=docker/dockerfile:1
+
+FROM debian:bullseye-slim
+
+RUN apt-get update && apt-get install -y curl
+
+ENTRYPOINT sleep 1d

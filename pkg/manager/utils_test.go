@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-logr/logr/testr"
 
+	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/metadata"
 	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/storage"
 )
 
@@ -28,6 +29,9 @@ func defaultTestOptions(t *testing.T, opts Options) Options {
 	}
 	if opts.NodeID == "" {
 		opts.NodeID = "test-node-id"
+	}
+	if opts.WriteCertificates == nil {
+		opts.WriteCertificates = func(metadata.Metadata, map[string][]byte) error { return nil }
 	}
 	return opts
 }

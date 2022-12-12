@@ -78,9 +78,8 @@ E2E_FLAKE_ATTEMPTS ?= 1
 .PHONY: e2e-test
 e2e-test: ## Runs e2e tests
 e2e-test: install-tool.golang install-tool.ginkgo
-ifneq ($(wildcard test/e2e/*),)
 ifneq ($(SKIP_BUILD),true)
-	$(MAKE) GOOS=linux release-snapshot
+	$(MAKE) GOOS=linux release-snapshot build-e2e-images
 endif
 	$(info $(M) running e2e tests$(if $(E2E_LABEL), labelled "$(E2E_LABEL)")$(if $(E2E_FOCUS), matching "$(E2E_FOCUS)"))
 	ginkgo run \
@@ -109,7 +108,6 @@ endif
 	go tool cover \
 		-html=coverage-e2e.out \
 		-o coverage-e2e.html
-endif
 
 GOLANGCI_CONFIG_FILE ?= $(wildcard $(REPO_ROOT)/.golangci.y*ml)
 
@@ -168,3 +166,15 @@ go-generate: install-tool.golang ; $(info $(M) running go generate)
 go-mod-upgrade: ## Interactive check for direct module dependency upgrades
 go-mod-upgrade: install-tool.golang install-tool.go.go-mod-upgrade ; $(info $(M) checking for direct module dependency upgrades)
 	go-mod-upgrade
+
+.PHONY: build-e2e-images
+build-e2e-images:
+	docker buildx build --load -f ./test/e2e/testdata/dockerfiles/Dockerfile.alpine \
+							 -t d2iq-labs/csi-driver-trusted-ca-test:alpine \
+							 ./test/e2e/testdata/dockerfiles
+	docker buildx build --load -f ./test/e2e/testdata/dockerfiles/Dockerfile.debian \
+							 -t d2iq-labs/csi-driver-trusted-ca-test:debian \
+							 ./test/e2e/testdata/dockerfiles
+	docker buildx build --load -f ./test/e2e/testdata/dockerfiles/Dockerfile.ubi \
+							 -t d2iq-labs/csi-driver-trusted-ca-test:redhat \
+							 ./test/e2e/testdata/dockerfiles

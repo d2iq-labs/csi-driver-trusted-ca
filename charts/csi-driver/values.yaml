@@ -31,7 +31,7 @@ livenessProbeImage:
 
 app:
   # -- Verbosity of csi-driver-trusted-ca logging.
-  logLevel: 1 # 1-5
+  logLevel: 5 # 1-5
   # -- Options for CSI driver
   driver:
     # -- Name of the driver which will be registered with Kubernetes.
