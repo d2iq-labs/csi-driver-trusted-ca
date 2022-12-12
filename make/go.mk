@@ -69,7 +69,7 @@ endif
 
 .PHONY: bench.%
 bench.%: ## Runs go benchmarks for a specific module
-bench.%:; $(info $(M) running benchmarks$(if $(GOTEST_RUN), matching "$(GOTEST_RUN)") for $* module)
+bench.%: ; $(info $(M) running benchmarks$(if $(GOTEST_RUN), matching "$(GOTEST_RUN)") for $* module)
 	$(if $(filter-out root,$*),cd $* && )go test $(if $(GOTEST_RUN),-run "$(GOTEST_RUN)") -race -cover -v ./...
 
 E2E_PARALLEL_NODES ?= $(shell nproc --ignore=1)
@@ -78,18 +78,21 @@ E2E_FLAKE_ATTEMPTS ?= 1
 .PHONY: e2e-test
 e2e-test: ## Runs e2e tests
 e2e-test: install-tool.golang install-tool.ginkgo
+ifneq ($(wildcard test/e2e/*),)
+ifneq ($(SKIP_BUILD),true)
+	$(MAKE) GOOS=linux release-snapshot
+endif
 	$(info $(M) running e2e tests$(if $(E2E_LABEL), labelled "$(E2E_LABEL)")$(if $(E2E_FOCUS), matching "$(E2E_FOCUS)"))
-	$(MAKE) build-snapshot
 	ginkgo run \
 		--r \
 		--race \
-		--progress \
+		--show-node-events \
 		--trace \
 		--randomize-all \
 		--randomize-suites \
 		--fail-on-pending \
 		--keep-going \
-		$(if $(filter $(CI),true),--always-emit-ginkgo-writer) \
+		$(if $(filter $(CI),true),--vv) \
 		--covermode=atomic \
 		--coverprofile coverage-e2e.out \
 		--procs=$(E2E_PARALLEL_NODES) \
@@ -106,6 +109,7 @@ e2e-test: install-tool.golang install-tool.ginkgo
 	go tool cover \
 		-html=coverage-e2e.out \
 		-o coverage-e2e.html
+endif
 
 GOLANGCI_CONFIG_FILE ?= $(wildcard $(REPO_ROOT)/.golangci.y*ml)
 
@@ -157,7 +161,8 @@ go-clean.%: install-tool.golang; $(info $(M) running go clean for $* module)
 .PHONY: go-generate
 go-generate: ## Runs go generate
 go-generate: install-tool.golang ; $(info $(M) running go generate)
-	go generate ./...
+	go generate -x ./...
+	go fix ./...
 
 .PHONY: go-mod-upgrade
 go-mod-upgrade: ## Interactive check for direct module dependency upgrades
