@@ -25,6 +25,8 @@ type Options struct {
 
 	// NodeID is a unique identifier for the node.
 	NodeID string
+
+	WriteCertificates WriteCertificatesFunc
 }
 
 // NewManager constructs a new manager used to manage volumes containing
@@ -38,6 +40,9 @@ func NewManager(opts Options) (*Manager, error) {
 	if opts.MetadataReader == nil {
 		return nil, errors.New("metadataReader must be set")
 	}
+	if opts.WriteCertificates == nil {
+		return nil, errors.New("writeCertificates must be set")
+	}
 	if opts.NodeID == "" {
 		return nil, errors.New("nodeID must be set")
 	}
@@ -50,6 +55,8 @@ func NewManager(opts Options) (*Manager, error) {
 		managedVolumes: map[string]chan struct{}{},
 
 		nodeNameHash: nodeNameHash,
+
+		writeCertificates: opts.WriteCertificates,
 	}
 
 	vols, err := opts.MetadataReader.ListVolumes()
@@ -101,6 +108,8 @@ type Manager struct {
 	// hash of the node name this driver is running on, used to label CertificateRequest
 	// resources to allow the lister to be scoped to requests for this node only
 	nodeNameHash string
+
+	writeCertificates WriteCertificatesFunc
 }
 
 // ManageVolumeImmediate will register a volume for management and immediately attempt to retrieve the trusted CA certs.
@@ -113,9 +122,13 @@ func (m *Manager) ManageVolumeImmediate(
 		return false, nil
 	}
 
-	_, err = m.metadataReader.ReadMetadata(volumeID)
+	meta, err := m.metadataReader.ReadMetadata(volumeID)
 	if err != nil {
 		return true, fmt.Errorf("reading metadata: %w", err)
+	}
+
+	if err := m.writeCertificates(meta, map[string][]byte{"a": []byte("b")}); err != nil {
+		return true, err
 	}
 
 	return true, nil
@@ -167,8 +180,10 @@ func (m *Manager) IsVolumeReady(volumeID string) bool {
 	defer m.lock.Unlock()
 	// a volume is not classed as Ready if it is not managed
 	if _, managed := m.managedVolumes[volumeID]; !managed {
+		m.log.V(2).Info("Volume is not yet managed")
 		return false
 	}
+	m.log.V(2).Info("Volume is already managed")
 
 	_, err := m.metadataReader.ReadMetadata(volumeID)
 	if err != nil {

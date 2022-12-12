@@ -4,9 +4,10 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
+  namespace: {{ .Release.Namespace }}
   name: {{ include "csi-driver-trusted-ca.name" . }}
   labels:
-{{ include "csi-driver-trusted-ca.labels" . | indent 4 }}
+    {{ include "csi-driver-trusted-ca.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:

@@ -49,9 +49,10 @@ func NewCommand(ctx context.Context) *cobra.Command {
 				NodeID:        opts.NodeID,
 				Store:         store,
 				Manager: manager.NewManagerOrDie(manager.Options{
-					MetadataReader: store,
-					Log:            &mngrlog,
-					NodeID:         opts.NodeID,
+					MetadataReader:    store,
+					Log:               &mngrlog,
+					NodeID:            opts.NodeID,
+					WriteCertificates: store.WriteFiles,
 				}),
 			})
 			if err != nil {
