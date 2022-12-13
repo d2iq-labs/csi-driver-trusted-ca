@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -66,7 +67,9 @@ var _ = Describe("Successful",
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Successfully create secret with dummy data")
+			By("Successfully create secret with data using registry CA certificate")
+			caBytes, err := os.ReadFile(e2eConfig.Registry.CACertFile)
+			Expect(err).NotTo(HaveOccurred())
 			secret, err = kindClusterClient.CoreV1().Secrets(corev1.NamespaceDefault).Create(
 				ctx,
 				&corev1.Secret{
@@ -74,7 +77,7 @@ var _ = Describe("Successful",
 						Namespace:    corev1.NamespaceDefault,
 						GenerateName: "trusted-certs-",
 					},
-					StringData: map[string]string{"e": "f"},
+					Data: map[string][]byte{"registry-ca.pem": caBytes},
 				},
 				metav1.CreateOptions{},
 			)
@@ -206,11 +209,35 @@ var _ = Describe("Successful",
 				kindClusterClient,
 				kindClusterRESTConfig,
 				pod.Namespace, pod.Name, "container",
-				"/etc/ssl/certs/e",
+				"/etc/ssl/certs/registry-ca.pem",
 			)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(stderr).To(BeEmpty())
-			Expect(contents).To(Equal("f"))
+			Expect(contents).To(Equal(string(secret.Data["registry-ca.pem"])))
+
+			contents, stderr, err = kubernetes.ReadFileFromPod(
+				ctx,
+				kindClusterClient,
+				kindClusterRESTConfig,
+				pod.Namespace, pod.Name, "container",
+				"/etc/ssl/certs/ca-certificates.crt",
+			)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(stderr).To(BeEmpty())
+			Expect(contents).To(Equal(string(secret.Data["registry-ca.pem"]) + "\n\n"))
+		})
+
+		It("Test curl without specifying CA certs", func(ctx SpecContext) {
+			pod := runTestPodInNewNamespace(ctx, kindClusterClient, "alpine")
+
+			stdout, stderr, err := kubernetes.ExecuteInPod(
+				ctx,
+				kindClusterClient,
+				kindClusterRESTConfig,
+				pod.Namespace, pod.Name, "container",
+				"curl", "-fsSL", fmt.Sprintf("https://%s", e2eConfig.Registry.Address),
+			)
+			Expect(err).NotTo(HaveOccurred(), "stdout: %s, stderr: %s", stdout, stderr)
 		})
 	},
 )

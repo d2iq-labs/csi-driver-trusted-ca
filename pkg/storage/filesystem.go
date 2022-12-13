@@ -13,12 +13,13 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/cert-manager/csi-lib/third_party/util"
 	"github.com/go-logr/logr"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/mount-utils"
 
+	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/linuxtls"
 	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/metadata"
+	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/util"
 )
 
 const (
@@ -238,17 +239,18 @@ func (f *Filesystem) WriteFiles(meta metadata.Metadata, files map[string][]byte)
 	}
 
 	payload := makePayload(files)
-	if err := writer.Write(payload); err != nil {
+	dirFuncs := linuxtls.DirFuncsForVolume(meta)
+	if err := writer.Write(payload, dirFuncs...); err != nil {
 		return err
 	}
 
+	// "..data" is the well-known location where the atomic writer links to the
+	// latest directory containing the files just written. Chown these real
+	// files.
+	dirName := filepath.Join(f.dataPathForVolumeID(meta.VolumeID), "..data")
+
 	// If a fsGroup is defined, Chown all files just written.
 	if fsGroup != nil {
-		// "..data" is the well-known location where the atomic writer links to the
-		// latest directory containing the files just written. Chown these real
-		// files.
-		dirName := filepath.Join(f.dataPathForVolumeID(meta.VolumeID), "..data")
-
 		for filename := range files {
 			// Set the uid to -1 which means don't change ownership in Go.
 			if err := os.Chown(filepath.Join(dirName, filename), -1, int(*fsGroup)); err != nil {

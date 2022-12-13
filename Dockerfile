@@ -5,8 +5,7 @@
 
 FROM alpine:3.17
 
-# Add util-linux to get a new version of losetup.
-RUN apk add util-linux
+RUN apk add openssl p11-kit
 
 COPY csi-driver-trusted-ca /usr/local/bin/csi-driver-trusted-ca
 

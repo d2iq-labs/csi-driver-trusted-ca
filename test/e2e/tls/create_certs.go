@@ -5,9 +5,8 @@ package tls
 
 import (
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -31,11 +30,11 @@ func GenerateCertificates(dir string, hostnames ...string) error {
 	return nil
 }
 
-func generateCA(outputDir string) (*x509.Certificate, *ecdsa.PrivateKey, error) {
+func generateCA(outputDir string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
-			Organization: []string{"DUMMY"},
+			Organization: []string{"DUMMY CA"},
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(0, 0, 1),
@@ -45,7 +44,7 @@ func generateCA(outputDir string) (*x509.Certificate, *ecdsa.PrivateKey, error) 
 	}
 
 	// create our private and public key
-	caPrivKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate CA private key: %w", err)
 	}
@@ -69,7 +68,7 @@ func generateCA(outputDir string) (*x509.Certificate, *ecdsa.PrivateKey, error) 
 		return nil, nil, fmt.Errorf("failed to PEM-encode CA certificate: %w", err)
 	}
 
-	encodedCAPrivKey, err := x509.MarshalECPrivateKey(caPrivKey)
+	encodedCAPrivKey, err := x509.MarshalPKCS8PrivateKey(caPrivKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to marshal CA private key: %w", err)
 	}
@@ -80,7 +79,7 @@ func generateCA(outputDir string) (*x509.Certificate, *ecdsa.PrivateKey, error) 
 	}
 	defer caKey.Close()
 	err = pem.Encode(caKey, &pem.Block{
-		Type:  "EC PRIVATE KEY",
+		Type:  "RSA PRIVATE KEY",
 		Bytes: encodedCAPrivKey,
 	})
 	if err != nil {
@@ -99,7 +98,7 @@ func generateServerCerts(
 	cert := &x509.Certificate{
 		SerialNumber: big.NewInt(2),
 		Subject: pkix.Name{
-			Organization: []string{"DUMMY"},
+			Organization: []string{"DUMMY SERVER"},
 		},
 		DNSNames:    hostnames,
 		NotBefore:   time.Now(),
@@ -107,7 +106,7 @@ func generateServerCerts(
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 	}
 
-	certPrivKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	certPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return fmt.Errorf("failed to generate TLS private key: %w", err)
 	}
@@ -136,7 +135,7 @@ func generateServerCerts(
 		return fmt.Errorf("failed to PEM-encode TLS certificate: %w", err)
 	}
 
-	encodedCertPrivKey, err := x509.MarshalECPrivateKey(certPrivKey)
+	encodedCertPrivKey, err := x509.MarshalPKCS8PrivateKey(certPrivKey)
 	if err != nil {
 		return fmt.Errorf("failed to marshal TLS private key: %w", err)
 	}
@@ -146,7 +145,7 @@ func generateServerCerts(
 	}
 	defer keyFile.Close()
 	err = pem.Encode(keyFile, &pem.Block{
-		Type:  "EC PRIVATE KEY",
+		Type:  "RSA PRIVATE KEY",
 		Bytes: encodedCertPrivKey,
 	})
 	if err != nil {
