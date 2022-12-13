@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/imdario/mergo"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -53,7 +54,7 @@ func InstallOrUpgrade(
 	// If a release exists, upgrade it (could be no-op) or else perform an install.
 	histClient := action.NewHistory(actionConfig)
 	histClient.Max = 1
-	_, err = histClient.Run(releaseName)
+	releases, err := histClient.Run(releaseName)
 	if err != nil && !errors.Is(err, driver.ErrReleaseNotFound) {
 		return nil, fmt.Errorf("failed to check if helm chart is already installed: %w", err)
 	}
@@ -65,7 +66,16 @@ func InstallOrUpgrade(
 	}
 
 	if upgradeRequired {
-		return runUpgrade(ctx, namespace, releaseName, chrt, values, actionConfig, timeout)
+		return runUpgrade(
+			ctx,
+			namespace,
+			releaseName,
+			chrt,
+			values,
+			releases[0].Config,
+			actionConfig,
+			timeout,
+		)
 	}
 
 	return runInstall(ctx, namespace, releaseName, chrt, values, actionConfig, timeout)
@@ -78,6 +88,7 @@ func runUpgrade(
 	releaseName string,
 	chrt *chart.Chart,
 	values map[string]interface{},
+	previousValues map[string]interface{},
 	cfg *action.Configuration,
 	timeout time.Duration,
 ) (*release.Release, error) {
@@ -88,7 +99,16 @@ func runUpgrade(
 	upgradeAction.Namespace = namespace
 	upgradeAction.Timeout = timeout
 
-	r, err := upgradeAction.RunWithContext(ctx, releaseName, chrt, values)
+	mergedValues := make(map[string]interface{}, len(previousValues))
+	for k, v := range previousValues {
+		mergedValues[k] = v
+	}
+
+	if err := mergo.Merge(&mergedValues, values, mergo.WithOverride); err != nil {
+		return nil, fmt.Errorf("failed to merge values: %w", err)
+	}
+
+	r, err := upgradeAction.RunWithContext(ctx, releaseName, chrt, mergedValues)
 	if err != nil {
 		return r, fmt.Errorf("failed to upgrade helm release: %w", err)
 	}

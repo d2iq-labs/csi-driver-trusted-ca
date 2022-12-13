@@ -136,7 +136,7 @@ func (m *Manager) ManageVolumeImmediate(
 		return true, fmt.Errorf("reading metadata: %w", err)
 	}
 
-	files, err := m.getCertificates(meta)
+	files, err := m.getCertificates(ctx, meta)
 	if err != nil {
 		return true, err
 	}

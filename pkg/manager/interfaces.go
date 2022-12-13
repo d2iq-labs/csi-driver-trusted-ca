@@ -3,8 +3,12 @@
 
 package manager
 
-import "github.com/d2iq-labs/csi-driver-trusted-ca/pkg/metadata"
+import (
+	"context"
 
-type GetCertificatesFunc func(meta metadata.Metadata) (map[string][]byte, error)
+	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/metadata"
+)
+
+type GetCertificatesFunc func(ctx context.Context, meta metadata.Metadata) (map[string][]byte, error)
 
 type WriteCertificatesFunc func(meta metadata.Metadata, cas map[string][]byte) error

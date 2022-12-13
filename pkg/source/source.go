@@ -4,8 +4,12 @@
 package source
 
 import (
+	"context"
 	"fmt"
 	"regexp"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/metadata"
 )
@@ -14,32 +18,49 @@ var (
 	sourceRegexp = regexp.MustCompile(`^([A-Za-z0-9]+)::(.+)$`)
 
 	getters = map[string]func(string) (Source, error){
-		"test": newTestSource,
+		"test":      newTestSource,
+		"configmap": newConfigmapSource,
+		"secret":    newSecretSource,
 	}
 )
 
 type Source interface {
-	GetFiles(metadata.Metadata) (map[string][]byte, error)
+	GetFiles(context.Context, metadata.Metadata) (map[string][]byte, error)
 }
 
-func New(src string) (Source, error) {
+type WithRESTConfig interface {
+	InjectRESTConfig(*rest.Config)
+}
+
+type WithKubernetesClient interface {
+	InjectKubernetesClient(kubernetes.Interface)
+}
+
+func New(src string, restCfg *rest.Config) (Source, error) {
 	getterName, getterConfig := getSource(src)
-	getter, ok := getters[getterName]
+	getterFunc, ok := getters[getterName]
 	if ok {
-		return getter(getterConfig)
+		getter, err := getterFunc(getterConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		if gc, ok := getter.(WithKubernetesClient); ok {
+			kc, err := kubernetes.NewForConfig(restCfg)
+			if err != nil {
+				return nil, err
+			}
+
+			gc.InjectKubernetesClient(kc)
+		}
+		if rc, ok := getter.(WithRESTConfig); ok {
+			rc.InjectRESTConfig(restCfg)
+		}
+
+		return getter, nil
 	}
 
 	return nil, fmt.Errorf("unsupported source: %s", src)
-}
-
-func newTestSource(_ string) (Source, error) {
-	return testSource{}, nil
-}
-
-type testSource struct{}
-
-func (testSource) GetFiles(_ metadata.Metadata) (map[string][]byte, error) {
-	return map[string][]byte{"a": []byte("b")}, nil
 }
 
 func getSource(src string) (getterName, getterConfig string) {
