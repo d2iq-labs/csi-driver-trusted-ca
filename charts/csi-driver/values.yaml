@@ -1,6 +1,8 @@
 # Copyright 2022 D2iQ, Inc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+trustedCertsSource: ""
+
 image:
   # -- Target image repository.
   repository: d2iq-labs/csi-driver-trusted-ca

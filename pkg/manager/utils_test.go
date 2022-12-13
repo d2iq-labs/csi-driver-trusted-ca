@@ -33,5 +33,10 @@ func defaultTestOptions(t *testing.T, opts Options) Options {
 	if opts.WriteCertificates == nil {
 		opts.WriteCertificates = func(metadata.Metadata, map[string][]byte) error { return nil }
 	}
+	if opts.GetCertificates == nil {
+		opts.GetCertificates = func(metadata.Metadata) (map[string][]byte, error) {
+			return map[string][]byte{"a": []byte("b")}, nil
+		}
+	}
 	return opts
 }

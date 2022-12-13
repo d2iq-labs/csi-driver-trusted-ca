@@ -143,7 +143,7 @@ var _ = SynchronizedBeforeSuite(
 		namedImg, err := reference.ParseNormalizedNamed(img.Name)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Installing trusted CA CSI driver daemonset")
+		By("Installing trusted CA CSI driver daemonset with test data")
 		release, err := helm.InstallOrUpgrade(
 			ctx,
 			"csi-driver-trusted-ca",
@@ -154,6 +154,7 @@ var _ = SynchronizedBeforeSuite(
 					"tag":        namedImg.(reference.NamedTagged).Tag(),
 					"pullPolicy": corev1.PullAlways,
 				},
+				"trustedCertsSource": "test::anything",
 			},
 			e2eConfig.Kubeconfig,
 			metav1.NamespaceSystem,
