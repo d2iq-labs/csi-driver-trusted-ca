@@ -43,7 +43,7 @@ func NewCommand(ctx context.Context) *cobra.Command {
 			}
 			store.FSGroupVolumeAttributeKey = csiapi.FSGroupKey
 
-			certSource, err := source.New(opts.TrustedCertsSource)
+			certSource, err := source.New(opts.TrustedCertsSource, opts.RestConfig)
 			if err != nil {
 				return fmt.Errorf("failed to create cert source: %w", err)
 			}

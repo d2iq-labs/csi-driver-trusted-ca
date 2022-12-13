@@ -4,6 +4,7 @@
 package manager
 
 import (
+	"context"
 	"testing"
 
 	"github.com/go-logr/logr/testr"
@@ -34,7 +35,7 @@ func defaultTestOptions(t *testing.T, opts Options) Options {
 		opts.WriteCertificates = func(metadata.Metadata, map[string][]byte) error { return nil }
 	}
 	if opts.GetCertificates == nil {
-		opts.GetCertificates = func(metadata.Metadata) (map[string][]byte, error) {
+		opts.GetCertificates = func(context.Context, metadata.Metadata) (map[string][]byte, error) {
 			return map[string][]byte{"a": []byte("b")}, nil
 		}
 	}
