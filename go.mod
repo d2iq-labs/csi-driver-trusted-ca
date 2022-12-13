@@ -6,7 +6,6 @@ module github.com/d2iq-labs/csi-driver-trusted-ca
 go 1.19
 
 require (
-	github.com/cert-manager/csi-lib v0.4.0
 	github.com/container-storage-interface/spec v1.7.0
 	github.com/distribution/distribution/v3 v3.0.0-20220526142353-ffbd94cbe269
 	github.com/docker/docker v20.10.21+incompatible
