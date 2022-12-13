@@ -4,7 +4,8 @@
 package v1alpha1
 
 const (
-	FSGroupKey = "trusted-ca.csi.labs.d2iq.com/fs-group"
+	DriverName = "trusted-ca.csi.labs.d2iq.com"
+	FSGroupKey = DriverName + "/fs-group"
 )
 
 const (

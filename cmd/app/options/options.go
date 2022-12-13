@@ -16,6 +16,8 @@ import (
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
+
+	csiapi "github.com/d2iq-labs/csi-driver-trusted-ca/pkg/apis/v1alpha1"
 )
 
 // Options are the main options for the driver. Populated via processing
@@ -111,7 +113,7 @@ func (o *Options) addAppFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.Endpoint, "endpoint", "",
 		"The endpoint that the driver will connect to the Kubelet.")
 
-	fs.StringVar(&o.DriverName, "driver-name", "trusted-ca.csi.labs.d2iq.com",
+	fs.StringVar(&o.DriverName, "driver-name", csiapi.DriverName,
 		"The name of this CSI driver which will be shared with the Kubelet.")
 
 	fs.StringVar(&o.DataRoot, "data-root", "/csi-data-dir",

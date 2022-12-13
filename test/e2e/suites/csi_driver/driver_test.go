@@ -3,7 +3,7 @@
 
 //go:build e2e
 
-package mirror_test
+package csi_driver_test
 
 import (
 	"context"
@@ -19,6 +19,7 @@ import (
 
 	"github.com/d2iq-labs/csi-driver-trusted-ca/test/e2e/docker"
 	"github.com/d2iq-labs/csi-driver-trusted-ca/test/e2e/env"
+	"github.com/d2iq-labs/csi-driver-trusted-ca/test/e2e/kubernetes"
 )
 
 var _ = Describe("Successful",
@@ -40,7 +41,10 @@ var _ = Describe("Successful",
 			}
 		})
 
-		It("CSI daemonset should be running", func(ctx SpecContext) {
+		It("CSI daemonset should be running on all nodes", func(ctx SpecContext) {
+			nodes, err := kindClusterClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
 			Eventually(func(ctx context.Context) status.Status {
 				var err error
 				ds, err := kindClusterClient.AppsV1().DaemonSets(metav1.NamespaceSystem).
@@ -53,12 +57,27 @@ var _ = Describe("Successful",
 					Expect(err).NotTo(HaveOccurred())
 				}
 
-				if ds.Status.DesiredNumberScheduled == 0 {
+				if int(ds.Status.DesiredNumberScheduled) != len(nodes.Items) {
 					return status.InProgressStatus
 				}
 
 				return objStatus(ds, scheme.Scheme)
 			}, time.Minute, time.Second).WithContext(ctx).
 				Should(Equal(status.CurrentStatus))
+		})
+
+		It("Mount populated CSI volume in pod", func(ctx SpecContext) {
+			pod := runTestPodInNewNamespace(ctx, kindClusterClient, "alpine")
+
+			contents, stderr, err := kubernetes.ReadFileFromPod(
+				ctx,
+				kindClusterClient,
+				kindClusterRESTConfig,
+				pod.Namespace, pod.Name, "container",
+				"/etc/ssl/certs/a",
+			)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(stderr).To(BeEmpty())
+			Expect(contents).To(Equal("b"))
 		})
 	})

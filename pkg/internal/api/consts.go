@@ -3,7 +3,9 @@
 
 package api
 
+import csiapi "github.com/d2iq-labs/csi-driver-trusted-ca/pkg/apis/v1alpha1"
+
 const (
-	NodeIDHashLabelKey   = "trusted-ca.csi.labs.d2iq.com/node-id-hash"
-	VolumeIDHashLabelKey = "trusted-ca.csi.labs.d2iq.com/volume-id-hash"
+	NodeIDHashLabelKey   = csiapi.DriverName + "/node-id-hash"
+	VolumeIDHashLabelKey = csiapi.DriverName + "/volume-id-hash"
 )

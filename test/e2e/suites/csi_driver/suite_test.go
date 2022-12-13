@@ -3,14 +3,16 @@
 
 //go:build e2e
 
-package mirror_test
+package csi_driver_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,16 +22,20 @@ import (
 	"go.uber.org/multierr"
 	"helm.sh/helm/v3/pkg/cli/output"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cli-utils/pkg/kstatus/status"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 
+	csiapi "github.com/d2iq-labs/csi-driver-trusted-ca/pkg/apis/v1alpha1"
 	"github.com/d2iq-labs/csi-driver-trusted-ca/test/e2e/cluster"
 	"github.com/d2iq-labs/csi-driver-trusted-ca/test/e2e/docker"
 	"github.com/d2iq-labs/csi-driver-trusted-ca/test/e2e/env"
@@ -40,7 +46,7 @@ import (
 
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Mirror Suite")
+	RunSpecs(t, "Trusted CA CSI Driver Suite")
 }
 
 type e2eSetupConfig struct {
@@ -80,9 +86,9 @@ var _ = SynchronizedBeforeSuite(
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Starting Docker registry")
-		mirrorRegistry, err := registry.NewRegistry(ctx, GinkgoT().TempDir())
+		testRegistry, err := registry.NewRegistry(ctx, GinkgoT().TempDir())
 		Expect(err).ToNot(HaveOccurred())
-		DeferCleanup(mirrorRegistry.Delete, NodeTimeout(time.Minute))
+		DeferCleanup(testRegistry.Delete, NodeTimeout(time.Minute))
 
 		By("Starting KinD cluster")
 		kindCluster, kcName, kubeconfig, err := cluster.NewKinDCluster(
@@ -91,23 +97,16 @@ var _ = SynchronizedBeforeSuite(
 				Nodes: []v1alpha4.Node{{
 					Role: v1alpha4.ControlPlaneRole,
 					ExtraMounts: []v1alpha4.Mount{{
-						HostPath:      mirrorRegistry.CACertFile(),
-						ContainerPath: "/etc/containerd/mirror-registry-ca.pem",
+						HostPath:      testRegistry.CACertFile(),
+						ContainerPath: "/etc/containerd/test-registry-ca.pem",
 						Readonly:      true,
 					}},
 				}},
 				ContainerdConfigPatches: []string{
-					fmt.Sprintf(
-						`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["https://%[1]s"]
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."k8s.gcr.io"]
-  endpoint = ["https://%[1]s"]
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."*"]
-  endpoint = ["https://%[1]s"]
-[plugins."io.containerd.grpc.v1.cri".registry.configs."%[1]s".tls]
-  ca_file   = "/etc/containerd/mirror-registry-ca.pem"
+					fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.configs."%[1]s".tls]
+  ca_file   = "/etc/containerd/test-registry-ca.pem"
 `,
-						mirrorRegistry.Address(),
+						testRegistry.Address(),
 					),
 				},
 			},
@@ -118,9 +117,9 @@ var _ = SynchronizedBeforeSuite(
 
 		e2eConfig = e2eSetupConfig{
 			Registry: e2eRegistryConfig{
-				Address:         mirrorRegistry.Address(),
-				HostPortAddress: mirrorRegistry.HostPortAddress(),
-				CACertFile:      mirrorRegistry.CACertFile(),
+				Address:         testRegistry.Address(),
+				HostPortAddress: testRegistry.HostPortAddress(),
+				CACertFile:      testRegistry.CACertFile(),
 			},
 			Kubeconfig: kubeconfig,
 		}
@@ -151,6 +150,7 @@ var _ = SynchronizedBeforeSuite(
 			filepath.Join("..", "..", "..", "..", "charts", "csi-driver"),
 			map[string]interface{}{
 				"image": map[string]interface{}{
+					"repository": imageFromTestRegistry(namedImg.(reference.NamedTagged)).Name(),
 					"tag":        namedImg.(reference.NamedTagged).Tag(),
 					"pullPolicy": corev1.PullAlways,
 				},
@@ -186,36 +186,106 @@ var _ = SynchronizedBeforeSuite(
 	NodeTimeout(time.Minute*2), GracePeriod(time.Minute*2),
 )
 
-// func runPod(ctx context.Context, k8sClient kubernetes.Interface, image string) *corev1.Pod {
-// 	pod, err := k8sClient.CoreV1().Pods(metav1.NamespaceDefault).
-// 		Create(
-// 			ctx,
-// 			&corev1.Pod{
-// 				ObjectMeta: metav1.ObjectMeta{GenerateName: "pod-"},
-// 				Spec: corev1.PodSpec{
-// 					Containers: []corev1.Container{{
-// 						Name:            "container1",
-// 						Image:           image,
-// 						ImagePullPolicy: corev1.PullAlways,
-// 					}},
-// 				},
-// 			},
-// 			metav1.CreateOptions{},
-// 		)
-// 	Expect(err).NotTo(HaveOccurred())
+func imageFromTestRegistry(img reference.NamedTagged) reference.NamedTagged {
+	imgName := img.String()
+	domain := reference.Domain(img)
+	if domain != "" {
+		imgName = strings.TrimPrefix(imgName, domain+"/")
+	}
+	namedImg, err := reference.ParseNormalizedNamed(
+		fmt.Sprintf("%s/%s", e2eConfig.Registry.Address, imgName),
+	)
+	Expect(err).NotTo(HaveOccurred())
+	return namedImg.(reference.NamedTagged)
+}
 
-// 	DeferCleanup(func(ctx SpecContext) {
-// 		err := kindClusterClient.CoreV1().Pods(metav1.NamespaceDefault).
-// 			Delete(ctx, pod.GetName(), *metav1.NewDeleteOptions(0))
-// 		Expect(err).NotTo(HaveOccurred())
-// 	}, NodeTimeout(time.Minute))
+func testPodImage(flavour string) reference.NamedTagged {
+	img, err := reference.ParseNormalizedNamed("d2iq-labs/csi-driver-trusted-ca-test")
+	Expect(err).NotTo(HaveOccurred())
+	imgTagged, err := reference.WithTag(img, flavour)
+	Expect(err).NotTo(HaveOccurred())
+	return imageFromTestRegistry(imgTagged)
+}
 
-// 	return pod
-// }
+func runTestPodInNewNamespace(
+	ctx context.Context,
+	k8sClient kubernetes.Interface,
+	flavour string,
+) *corev1.Pod {
+	ns, err := k8sClient.CoreV1().Namespaces().
+		Create(
+			ctx,
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{GenerateName: "csi-e2e-"},
+			},
+			metav1.CreateOptions{},
+		)
+	Expect(err).NotTo(HaveOccurred())
+	DeferCleanup(func(ctx SpecContext) {
+		err := kindClusterClient.CoreV1().Namespaces().
+			Delete(ctx, ns.GetName(), *metav1.NewDeleteOptions(0))
+		Expect(err).NotTo(HaveOccurred())
+	}, NodeTimeout(time.Minute))
 
-func objStatus(obj k8sruntime.Object, scheme *k8sruntime.Scheme) status.Status {
+	pod, err := k8sClient.CoreV1().Pods(ns.Name).
+		Create(
+			ctx,
+			&corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{GenerateName: "pod-"},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name:            "container1",
+						Image:           testPodImage(flavour).String(),
+						ImagePullPolicy: corev1.PullAlways,
+						VolumeMounts: []corev1.VolumeMount{{
+							Name:      "trusted-certs",
+							MountPath: "/etc/ssl/certs",
+							ReadOnly:  true,
+						}},
+					}},
+					Volumes: []corev1.Volume{{
+						Name: "trusted-certs",
+						VolumeSource: corev1.VolumeSource{
+							CSI: &corev1.CSIVolumeSource{
+								Driver:   csiapi.DriverName,
+								ReadOnly: pointer.Bool(true),
+							},
+						},
+					}},
+				},
+			},
+			metav1.CreateOptions{},
+		)
+	Expect(err).NotTo(HaveOccurred())
+
+	DeferCleanup(func(ctx SpecContext) {
+		err := kindClusterClient.CoreV1().Pods(ns.Name).
+			Delete(ctx, pod.GetName(), *metav1.NewDeleteOptions(0))
+		Expect(err).NotTo(HaveOccurred())
+	}, NodeTimeout(time.Minute))
+
+	Eventually(func(ctx context.Context) status.Status {
+		var err error
+		pod, err = kindClusterClient.CoreV1().Pods(pod.Namespace).
+			Get(ctx, pod.Name, metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return status.NotFoundStatus
+			}
+
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		return objStatus(pod, scheme.Scheme)
+	}, time.Minute, time.Second).WithContext(ctx).
+		Should(Equal(status.CurrentStatus))
+
+	return pod
+}
+
+func objStatus(obj k8sruntime.Object, objScheme *k8sruntime.Scheme) status.Status {
 	if obj.GetObjectKind().GroupVersionKind().Group == "" {
-		gvk, err := apiutil.GVKForObject(obj, scheme)
+		gvk, err := apiutil.GVKForObject(obj, objScheme)
 		Expect(err).NotTo(HaveOccurred())
 		obj.GetObjectKind().SetGroupVersionKind(gvk)
 	}
