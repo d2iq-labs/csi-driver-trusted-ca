@@ -227,8 +227,21 @@ var _ = Describe("Successful",
 			Expect(contents).To(Equal(string(secret.Data["registry-ca.pem"]) + "\n\n"))
 		})
 
-		It("Test curl without specifying CA certs", func(ctx SpecContext) {
+		It("Test curl without specifying CA certs on Alpine", func(ctx SpecContext) {
 			pod := runTestPodInNewNamespace(ctx, kindClusterClient, "alpine")
+
+			stdout, stderr, err := kubernetes.ExecuteInPod(
+				ctx,
+				kindClusterClient,
+				kindClusterRESTConfig,
+				pod.Namespace, pod.Name, "container",
+				"curl", "-fsSL", fmt.Sprintf("https://%s", e2eConfig.Registry.Address),
+			)
+			Expect(err).NotTo(HaveOccurred(), "stdout: %s, stderr: %s", stdout, stderr)
+		})
+
+		It("Test curl without specifying CA certs on Debian", func(ctx SpecContext) {
+			pod := runTestPodInNewNamespace(ctx, kindClusterClient, "debian")
 
 			stdout, stderr, err := kubernetes.ExecuteInPod(
 				ctx,

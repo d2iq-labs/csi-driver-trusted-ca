@@ -211,7 +211,7 @@ func testPodImage(flavour string) reference.NamedTagged {
 func runTestPodInNewNamespace(
 	ctx context.Context,
 	k8sClient kubernetes.Interface,
-	flavour string, //nolint:unparam // This will be used soon.
+	flavour string,
 ) *corev1.Pod {
 	ns, err := k8sClient.CoreV1().Namespaces().
 		Create(
