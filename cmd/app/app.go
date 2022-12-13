@@ -14,6 +14,7 @@ import (
 	csiapi "github.com/d2iq-labs/csi-driver-trusted-ca/pkg/apis/v1alpha1"
 	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/driver"
 	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/manager"
+	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/source"
 	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/storage"
 )
 
@@ -42,6 +43,11 @@ func NewCommand(ctx context.Context) *cobra.Command {
 			}
 			store.FSGroupVolumeAttributeKey = csiapi.FSGroupKey
 
+			certSource, err := source.New(opts.TrustedCertsSource)
+			if err != nil {
+				return fmt.Errorf("failed to create cert source: %w", err)
+			}
+
 			mngrlog := opts.Logr.WithName("manager")
 			d, err := driver.New(opts.Endpoint, opts.Logr.WithName("driver"), &driver.Options{
 				DriverName:    opts.DriverName,
@@ -52,6 +58,7 @@ func NewCommand(ctx context.Context) *cobra.Command {
 					MetadataReader:    store,
 					Log:               &mngrlog,
 					NodeID:            opts.NodeID,
+					GetCertificates:   certSource.GetFiles,
 					WriteCertificates: store.WriteFiles,
 				}),
 			})

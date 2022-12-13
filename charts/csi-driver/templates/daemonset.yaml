@@ -68,6 +68,7 @@ spec:
             - --node-id=$(NODE_ID)
             - --endpoint=$(CSI_ENDPOINT)
             - --data-root=csi-data-dir
+            - --trusted-certs-source={{ required "A valid .Values.trustedCertsSource entry required!" .Values.trustedCertsSource }}
           env:
             - name: NODE_ID
               valueFrom:

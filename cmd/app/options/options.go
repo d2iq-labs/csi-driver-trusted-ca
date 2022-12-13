@@ -49,6 +49,9 @@ type Options struct {
 	// RestConfig is the shared base rest config to connect to the Kubernetes
 	// API.
 	RestConfig *rest.Config
+
+	// TrustedCertsSource is the source of the trusted certs.
+	TrustedCertsSource string
 }
 
 func New() *Options {
@@ -83,6 +86,7 @@ func (o *Options) addFlags(cmd *cobra.Command) {
 	o.kubeConfigFlags.AddFlags(nfs.FlagSet("Kubernetes"))
 	_ = cmd.MarkPersistentFlagRequired("node-id")
 	_ = cmd.MarkPersistentFlagRequired("endpoint")
+	_ = cmd.MarkFlagRequired("trusted-certs-source")
 
 	usageFmt := "Usage:\n  %s\n"
 	cmd.SetUsageFunc(func(cmd *cobra.Command) error {
@@ -118,4 +122,7 @@ func (o *Options) addAppFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&o.DataRoot, "data-root", "/csi-data-dir",
 		"The directory that the driver will write and mount volumes from.")
+
+	fs.StringVar(&o.TrustedCertsSource, "trusted-certs-source", "configmap::kube-system/ca-certs",
+		"The source for the trusted certificates.")
 }

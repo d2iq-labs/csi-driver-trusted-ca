@@ -26,6 +26,8 @@ type Options struct {
 	// NodeID is a unique identifier for the node.
 	NodeID string
 
+	GetCertificates GetCertificatesFunc
+
 	WriteCertificates WriteCertificatesFunc
 }
 
@@ -39,6 +41,9 @@ func NewManager(opts Options) (*Manager, error) {
 	}
 	if opts.MetadataReader == nil {
 		return nil, errors.New("metadataReader must be set")
+	}
+	if opts.GetCertificates == nil {
+		return nil, errors.New("getCertificates must be set")
 	}
 	if opts.WriteCertificates == nil {
 		return nil, errors.New("writeCertificates must be set")
@@ -55,6 +60,8 @@ func NewManager(opts Options) (*Manager, error) {
 		managedVolumes: map[string]chan struct{}{},
 
 		nodeNameHash: nodeNameHash,
+
+		getCertificates: opts.GetCertificates,
 
 		writeCertificates: opts.WriteCertificates,
 	}
@@ -109,6 +116,8 @@ type Manager struct {
 	// resources to allow the lister to be scoped to requests for this node only
 	nodeNameHash string
 
+	getCertificates GetCertificatesFunc
+
 	writeCertificates WriteCertificatesFunc
 }
 
@@ -127,7 +136,12 @@ func (m *Manager) ManageVolumeImmediate(
 		return true, fmt.Errorf("reading metadata: %w", err)
 	}
 
-	if err := m.writeCertificates(meta, map[string][]byte{"a": []byte("b")}); err != nil {
+	files, err := m.getCertificates(meta)
+	if err != nil {
+		return true, err
+	}
+
+	if err := m.writeCertificates(meta, files); err != nil {
 		return true, err
 	}
 
