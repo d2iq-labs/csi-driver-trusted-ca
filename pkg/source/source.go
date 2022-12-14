@@ -21,6 +21,7 @@ var (
 		"test":      newTestSource,
 		"configmap": newConfigmapSource,
 		"secret":    newSecretSource,
+		"oci":       newOCISource,
 	}
 )
 

@@ -4,6 +4,7 @@ golang 1.19.4
 golangci-lint 1.50.1
 goreleaser 1.13.1
 helm 3.10.2
+oras 0.16.0
 pre-commit 2.20.0
 shfmt 3.6.0
 upx 4.0.1
