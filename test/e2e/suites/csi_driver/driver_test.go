@@ -43,7 +43,7 @@ var _ = Describe("Successful",
 
 		BeforeAll(func(ctx SpecContext) {
 			By("Pushing e2e Docker images to registry")
-			for _, t := range []string{"redhat", "alpine", "debian"} {
+			for _, t := range []string{"ubi", "alpine", "debian", "golang"} {
 				img := fmt.Sprintf("d2iq-labs/csi-driver-trusted-ca-test:%s", t)
 				err := docker.RetagAndPushImage(
 					ctx,
@@ -172,132 +172,71 @@ var _ = Describe("Successful",
 				Should(Equal(status.CurrentStatus))
 		}
 
-		It(
-			"Reconfigure trusted CA CSI driver daemonset to use configmap source",
-			func(ctx SpecContext) {
-				reconfigureCSIDriver(ctx, fmt.Sprintf("configmap::%s/%s", cm.Namespace, cm.Name))
-			},
-		)
-
-		It("Mount populated CSI volume in pod with data from configmap", func(ctx SpecContext) {
-			pod := runTestPodInNewNamespace(ctx, kindClusterClient, "alpine")
-
-			contents, stderr, err := kubernetes.ReadFileFromPod(
-				ctx,
-				kindClusterClient,
-				kindClusterRESTConfig,
-				pod.Namespace, pod.Name, "container",
-				"/etc/ssl/certs/c",
+		Context("ConfigMap source", Label("configmap"), func() {
+			It(
+				"Reconfigure trusted CA CSI driver daemonset to use configmap source",
+				func(ctx SpecContext) {
+					reconfigureCSIDriver(
+						ctx,
+						fmt.Sprintf("configmap::%s/%s", cm.Namespace, cm.Name),
+					)
+				},
 			)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(stderr).To(BeEmpty())
-			Expect(contents).To(Equal("d"))
-		})
 
-		It(
-			"Reconfigure trusted CA CSI driver daemonset to use configmap source",
-			func(ctx SpecContext) {
-				reconfigureCSIDriver(
+			It("Mount populated CSI volume in pod with data from configmap", func(ctx SpecContext) {
+				pod := runTestPodInNewNamespace(ctx, kindClusterClient, "alpine")
+
+				contents, stderr, err := kubernetes.ReadFileFromPod(
 					ctx,
-					fmt.Sprintf("secret::%s/%s", secret.Namespace, secret.Name),
+					kindClusterClient,
+					kindClusterRESTConfig,
+					pod.Namespace, pod.Name, "container",
+					"/etc/ssl/certs/c",
 				)
-			},
-		)
-
-		It("Mount populated CSI volume in pod with data from secret", func(ctx SpecContext) {
-			pod := runTestPodInNewNamespace(ctx, kindClusterClient, "alpine")
-
-			contents, stderr, err := kubernetes.ReadFileFromPod(
-				ctx,
-				kindClusterClient,
-				kindClusterRESTConfig,
-				pod.Namespace, pod.Name, "container",
-				"/etc/ssl/certs/registry-ca.pem",
-			)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(stderr).To(BeEmpty())
-			Expect(contents).To(Equal(string(secret.Data["registry-ca.pem"])))
-
-			contents, stderr, err = kubernetes.ReadFileFromPod(
-				ctx,
-				kindClusterClient,
-				kindClusterRESTConfig,
-				pod.Namespace, pod.Name, "container",
-				"/etc/ssl/certs/ca-certificates.crt",
-			)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(stderr).To(BeEmpty())
-			Expect(contents).To(Equal(string(secret.Data["registry-ca.pem"]) + "\n\n"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(stderr).To(BeEmpty())
+				Expect(contents).To(Equal("d"))
+			})
 		})
 
-		It("Test curl without specifying CA certs on Alpine", func(ctx SpecContext) {
-			pod := runTestPodInNewNamespace(ctx, kindClusterClient, "alpine")
-
-			stdout, stderr, err := kubernetes.ExecuteInPod(
-				ctx,
-				kindClusterClient,
-				kindClusterRESTConfig,
-				pod.Namespace, pod.Name, "container",
-				"curl", "-fsSL", fmt.Sprintf("https://%s", e2eConfig.Registry.Address),
+		Context("Secret source", Label("secret"), func() {
+			It(
+				"Reconfigure trusted CA CSI driver daemonset to use secret source",
+				func(ctx SpecContext) {
+					reconfigureCSIDriver(
+						ctx,
+						fmt.Sprintf("secret::%s/%s", secret.Namespace, secret.Name),
+					)
+				},
 			)
-			Expect(err).NotTo(HaveOccurred(), "stdout: %s, stderr: %s", stdout, stderr)
-		})
 
-		It("Test curl without specifying CA certs on Debian", func(ctx SpecContext) {
-			pod := runTestPodInNewNamespace(ctx, kindClusterClient, "debian")
+			It("Mount populated CSI volume in pod with data from secret", func(ctx SpecContext) {
+				pod := runTestPodInNewNamespace(ctx, kindClusterClient, "alpine")
 
-			stdout, stderr, err := kubernetes.ExecuteInPod(
-				ctx,
-				kindClusterClient,
-				kindClusterRESTConfig,
-				pod.Namespace, pod.Name, "container",
-				"curl", "-fsSL", fmt.Sprintf("https://%s", e2eConfig.Registry.Address),
-			)
-			Expect(err).NotTo(HaveOccurred(), "stdout: %s, stderr: %s", stdout, stderr)
-		})
-
-		It(
-			"Push registry CA cert to OCI registry",
-			func(ctx SpecContext) {
-				tmpDir := GinkgoT().TempDir()
-				tempTarArchive := filepath.Join(tmpDir, "ca-bundle.tar")
-				Expect(
-					archiver.Archive([]string{e2eConfig.Registry.CACertFile}, tempTarArchive),
-				).To(Succeed())
-				ociAddress := fmt.Sprintf(
-					"%s/%s:%s",
-					e2eConfig.Registry.HostPortAddress,
-					"trusted-certs",
-					"v1",
-				)
-				cmd := exec.CommandContext(
-					ctx, "oras", "push", "--insecure", ociAddress,
-					fmt.Sprintf("%s:%s", tempTarArchive, ocispecv1.MediaTypeImageLayer),
-				)
-				output, err := cmd.CombinedOutput()
-				Expect(err).NotTo(HaveOccurred(), "output: %s", output)
-			},
-		)
-
-		It(
-			"Reconfigure trusted CA CSI driver daemonset to use OCI source",
-			func(ctx SpecContext) {
-				ociAddress := fmt.Sprintf(
-					"%s/%s:%s",
-					e2eConfig.Registry.Address,
-					"trusted-certs",
-					"v1",
-				)
-				reconfigureCSIDriver(
+				contents, stderr, err := kubernetes.ReadFileFromPod(
 					ctx,
-					fmt.Sprintf("oci::%s", ociAddress),
+					kindClusterClient,
+					kindClusterRESTConfig,
+					pod.Namespace, pod.Name, "container",
+					"/etc/ssl/certs/registry-ca.pem",
 				)
-			},
-		)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(stderr).To(BeEmpty())
+				Expect(contents).To(Equal(string(secret.Data["registry-ca.pem"])))
 
-		It(
-			"Test curl without specifying CA certs on Alpine with certs from OCI",
-			func(ctx SpecContext) {
+				contents, stderr, err = kubernetes.ReadFileFromPod(
+					ctx,
+					kindClusterClient,
+					kindClusterRESTConfig,
+					pod.Namespace, pod.Name, "container",
+					"/etc/ssl/certs/ca-certificates.crt",
+				)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(stderr).To(BeEmpty())
+				Expect(contents).To(Equal(string(secret.Data["registry-ca.pem"]) + "\n\n"))
+			})
+
+			It("Test curl without specifying CA certs on Alpine", func(ctx SpecContext) {
 				pod := runTestPodInNewNamespace(ctx, kindClusterClient, "alpine")
 
 				stdout, stderr, err := kubernetes.ExecuteInPod(
@@ -308,7 +247,93 @@ var _ = Describe("Successful",
 					"curl", "-fsSL", fmt.Sprintf("https://%s", e2eConfig.Registry.Address),
 				)
 				Expect(err).NotTo(HaveOccurred(), "stdout: %s, stderr: %s", stdout, stderr)
-			},
-		)
+			})
+
+			It("Test curl without specifying CA certs on Debian", func(ctx SpecContext) {
+				pod := runTestPodInNewNamespace(ctx, kindClusterClient, "debian")
+
+				stdout, stderr, err := kubernetes.ExecuteInPod(
+					ctx,
+					kindClusterClient,
+					kindClusterRESTConfig,
+					pod.Namespace, pod.Name, "container",
+					"curl", "-fsSL", fmt.Sprintf("https://%s", e2eConfig.Registry.Address),
+				)
+				Expect(err).NotTo(HaveOccurred(), "stdout: %s, stderr: %s", stdout, stderr)
+			})
+		})
+
+		Context("OCI source", Label("oci"), func() {
+			It(
+				"Push registry CA cert to OCI registry",
+				func(ctx SpecContext) {
+					tmpDir := GinkgoT().TempDir()
+					tempTarArchive := filepath.Join(tmpDir, "ca-bundle.tar")
+					Expect(
+						archiver.Archive([]string{e2eConfig.Registry.CACertFile}, tempTarArchive),
+					).To(Succeed())
+					ociAddress := fmt.Sprintf(
+						"%s/%s:%s",
+						e2eConfig.Registry.HostPortAddress,
+						"trusted-certs",
+						"v1",
+					)
+					cmd := exec.CommandContext(
+						ctx, "oras", "push", "--insecure", ociAddress,
+						fmt.Sprintf("%s:%s", tempTarArchive, ocispecv1.MediaTypeImageLayer),
+					)
+					output, err := cmd.CombinedOutput()
+					Expect(err).NotTo(HaveOccurred(), "output: %s", output)
+				},
+			)
+
+			It(
+				"Reconfigure trusted CA CSI driver daemonset to use OCI source",
+				func(ctx SpecContext) {
+					ociAddress := fmt.Sprintf(
+						"%s/%s:%s",
+						e2eConfig.Registry.Address,
+						"trusted-certs",
+						"v1",
+					)
+					reconfigureCSIDriver(
+						ctx,
+						fmt.Sprintf("oci::%s", ociAddress),
+					)
+				},
+			)
+
+			It(
+				"Test curl without specifying CA certs on Alpine with certs from OCI",
+				func(ctx SpecContext) {
+					pod := runTestPodInNewNamespace(ctx, kindClusterClient, "alpine")
+
+					stdout, stderr, err := kubernetes.ExecuteInPod(
+						ctx,
+						kindClusterClient,
+						kindClusterRESTConfig,
+						pod.Namespace, pod.Name, "container",
+						"curl", "-fsSL", fmt.Sprintf("https://%s", e2eConfig.Registry.Address),
+					)
+					Expect(err).NotTo(HaveOccurred(), "stdout: %s, stderr: %s", stdout, stderr)
+				},
+			)
+
+			It(
+				"Test Go httpie-clone without specifying CA certs on Debian with certs from OCI",
+				func(ctx SpecContext) {
+					pod := runTestPodInNewNamespace(ctx, kindClusterClient, "golang")
+
+					stdout, stderr, err := kubernetes.ExecuteInPod(
+						ctx,
+						kindClusterClient,
+						kindClusterRESTConfig,
+						pod.Namespace, pod.Name, "container",
+						"/go/bin/ht", fmt.Sprintf("https://%s", e2eConfig.Registry.Address),
+					)
+					Expect(err).NotTo(HaveOccurred(), "stdout: %s, stderr: %s", stdout, stderr)
+				},
+			)
+		})
 	},
 )
