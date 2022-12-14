@@ -77,7 +77,7 @@ E2E_FLAKE_ATTEMPTS ?= 1
 
 .PHONY: e2e-test
 e2e-test: ## Runs e2e tests
-e2e-test: install-tool.golang install-tool.ginkgo
+e2e-test: install-tool.golang install-tool.ginkgo install-tool.oras
 ifneq ($(SKIP_BUILD),true)
 	$(MAKE) GOOS=linux release-snapshot build-e2e-images
 endif

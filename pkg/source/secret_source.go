@@ -14,7 +14,7 @@ import (
 	"github.com/d2iq-labs/csi-driver-trusted-ca/pkg/metadata"
 )
 
-var _ WithKubernetesClient = &configmapSource{}
+var _ WithKubernetesClient = &secretSource{}
 
 func newSecretSource(cfg string) (Source, error) {
 	cm := strings.Split(cfg, "/")

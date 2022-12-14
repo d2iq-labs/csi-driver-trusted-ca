@@ -10,11 +10,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
+	"github.com/mholt/archiver/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	ocispecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"go.uber.org/multierr"
 	"helm.sh/helm/v3/pkg/cli/output"
 	corev1 "k8s.io/api/core/v1"
@@ -252,5 +255,60 @@ var _ = Describe("Successful",
 			)
 			Expect(err).NotTo(HaveOccurred(), "stdout: %s, stderr: %s", stdout, stderr)
 		})
+
+		It(
+			"Push registry CA cert to OCI registry",
+			func(ctx SpecContext) {
+				tmpDir := GinkgoT().TempDir()
+				tempTarArchive := filepath.Join(tmpDir, "ca-bundle.tar")
+				Expect(
+					archiver.Archive([]string{e2eConfig.Registry.CACertFile}, tempTarArchive),
+				).To(Succeed())
+				ociAddress := fmt.Sprintf(
+					"%s/%s:%s",
+					e2eConfig.Registry.HostPortAddress,
+					"trusted-certs",
+					"v1",
+				)
+				cmd := exec.CommandContext(
+					ctx, "oras", "push", "--insecure", ociAddress,
+					fmt.Sprintf("%s:%s", tempTarArchive, ocispecv1.MediaTypeImageLayer),
+				)
+				output, err := cmd.CombinedOutput()
+				Expect(err).NotTo(HaveOccurred(), "output: %s", output)
+			},
+		)
+
+		It(
+			"Reconfigure trusted CA CSI driver daemonset to use OCI source",
+			func(ctx SpecContext) {
+				ociAddress := fmt.Sprintf(
+					"%s/%s:%s",
+					e2eConfig.Registry.Address,
+					"trusted-certs",
+					"v1",
+				)
+				reconfigureCSIDriver(
+					ctx,
+					fmt.Sprintf("oci::%s", ociAddress),
+				)
+			},
+		)
+
+		It(
+			"Test curl without specifying CA certs on Alpine with certs from OCI",
+			func(ctx SpecContext) {
+				pod := runTestPodInNewNamespace(ctx, kindClusterClient, "alpine")
+
+				stdout, stderr, err := kubernetes.ExecuteInPod(
+					ctx,
+					kindClusterClient,
+					kindClusterRESTConfig,
+					pod.Namespace, pod.Name, "container",
+					"curl", "-fsSL", fmt.Sprintf("https://%s", e2eConfig.Registry.Address),
+				)
+				Expect(err).NotTo(HaveOccurred(), "stdout: %s, stderr: %s", stdout, stderr)
+			},
+		)
 	},
 )

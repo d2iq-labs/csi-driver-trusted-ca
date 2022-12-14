@@ -28,9 +28,11 @@ ifeq ($(shell command -v asdf),)
 endif
 endif
 
+ASDF_PLUGIN_URL_oras := https://github.com/makkes/asdf-oras.git
+
 define install_tool
 	$(if $(1), \
-		(asdf plugin list 2>/dev/null | grep -E '^$(1)$$' &>/dev/null) || asdf plugin add $(1), \
+		(asdf plugin list 2>/dev/null | grep -E '^$(1)$$' &>/dev/null) || asdf plugin add $(1) $(ASDF_PLUGIN_URL_$(1)), \
 		grep -Eo '^[^#]\S+' $(REPO_ROOT)/.tool-versions | \
 			xargs -I{} bash -ec '(asdf plugin list 2>/dev/null | grep -E "^{}$$" &>/dev/null) || \
 														asdf plugin add {}' \
@@ -40,10 +42,10 @@ endef
 
 .PHONY: install-tools
 install-tools: ## Install all tools
-install-tools: ; $(info $(M) installing all tools)
+install-tools: install-tool.oras; $(info $(M) installing all tools)
 	$(call install_tool,)
 ifneq ($(wildcard $(GO_TOOLS_FILE)),)
-	cat $(GO_TOOLS_FILE) | xargs -L1 go install -v
+	grep -Eo '^[^[:space:]]+' $(GO_TOOLS_FILE) | xargs -L1 go install -v
 endif
 
 .PHONY: install-tool.%
