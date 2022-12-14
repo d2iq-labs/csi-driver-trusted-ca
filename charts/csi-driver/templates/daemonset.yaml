@@ -25,7 +25,7 @@ spec:
       containers:
 
         - name: node-driver-registrar
-          image: "{{ .Values.nodeDriverRegistrarImage.repository }}:{{ .Values.nodeDriverRegistrarImage.tag }}"
+          image: "{{ .Values.nodeDriverRegistrarImage.repository }}:{{ default .Chart.AppVersion .Values.nodeDriverRegistrarImage.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - -v={{ .Values.app.logLevel }}
@@ -43,7 +43,7 @@ spec:
               mountPath: /registration
 
         - name: liveness-probe
-          image: "{{ .Values.livenessProbeImage.repository }}:{{ .Values.livenessProbeImage.tag }}"
+          image: "{{ .Values.livenessProbeImage.repository }}:{{ default .Chart.AppVersion .Values.livenessProbeImage.tag }}"
           args:
             - --csi-address=/plugin/csi.sock
             - --probe-timeout=3s
@@ -60,7 +60,7 @@ spec:
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args :
             - --log-level={{ .Values.app.logLevel }}
