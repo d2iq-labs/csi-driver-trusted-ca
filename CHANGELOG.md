@@ -3,6 +3,17 @@
 <!-- Release notes generated using configuration in .github/release.yaml at main -->
 
 ## What's Changed
+### Fixes 🔧
+* fix: Lazy install asdf tools when releasing by @jimmidyson in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/29
+
+
+**Full Changelog**: https://github.com/d2iq-labs/csi-driver-trusted-ca/compare/v0.1.1...v0.1.2
+
+## Changelog
+
+<!-- Release notes generated using configuration in .github/release.yaml at main -->
+
+## What's Changed
 ### Other Changes
 * ci: Fix release process order by @jimmidyson in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/27
 
