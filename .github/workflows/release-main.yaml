@@ -21,6 +21,11 @@ jobs:
           changelog-notes-type: github
 
       - if: ${{ steps.release-please.outputs.release_created }}
+        name: Gather tool versions
+        uses: endorama/asdf-parse-tool-versions@v1
+        id: versions
+
+      - if: ${{ steps.release-please.outputs.release_created }}
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -52,3 +57,36 @@ jobs:
         run: make release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - if: ${{ steps.release-please.outputs.release_created }}
+        name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - if: ${{ steps.release-please.outputs.release_created }}
+        name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ fromJson(steps.versions.outputs.tools).helm }}
+
+      - if: ${{ steps.release-please.outputs.release_created }}
+        name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ fromJson(steps.versions.outputs.tools).helm }}
+
+      - if: ${{ steps.release-please.outputs.release_created }}
+        name: Package Helm chart
+        run: |
+          rm -rf .cr-release-packages
+          mkdir -p .cr-release-packages
+          helm package --destination .cr-release-packages --version ${{ steps.release-please.outputs.tag_name }} --app-version ${{ steps.release-please.outputs.tag_name }} charts/csi-driver
+
+      - if: ${{ steps.release-please.outputs.release_created }}
+        name: Publish Helm chart
+        uses: helm/chart-releaser-action@v1
+        with:
+          skip_packaging: true
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

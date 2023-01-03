@@ -26,3 +26,4 @@ dist/
 
 *.tar.gz
 *.tar
+.cr-release-packages/
