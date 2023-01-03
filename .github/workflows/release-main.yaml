@@ -41,8 +41,8 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - if: ${{ steps.release-please.outputs.release_created }}
-        name: Install tools via asdf
-        uses: asdf-vm/actions/install@v1
+        name: Install asdf
+        uses: asdf-vm/actions/setup@v1
 
       - if: ${{ steps.release-please.outputs.release_created }}
         name: Login to ghcr.io
