@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: test
-          image: d2iq-labs/csi-driver-trusted-ca-test:alpine
+          image: ghcr.io/d2iq-labs/csi-driver-trusted-ca-test:alpine
           volumeMounts:
             - mountPath: "/etc/ssl/certs"
               name: trusted-certs

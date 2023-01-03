@@ -82,7 +82,7 @@ make release-snapshot
 You then need to re-tag image:
 
 ```bash
-docker tag d2iq-labs/csi-driver-trusted-ca:v0.1.0-dev <YOUR_REGISTRY>/d2iq-labs/csi-driver-trusted-ca:v0.1.0-dev
+docker tag ghcr.io/d2iq-labs/csi-driver-trusted-ca:v0.1.0-dev <YOUR_REGISTRY>/d2iq-labs/csi-driver-trusted-ca:v0.1.0-dev
 ```
 
 And push it to your registry:

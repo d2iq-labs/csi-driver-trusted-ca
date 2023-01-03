@@ -126,15 +126,15 @@ var _ = SynchronizedBeforeSuite(
 
 		By("Pushing project Docker image to registry")
 		img, ok := artifacts.SelectDockerImage(
-			"d2iq-labs/csi-driver-trusted-ca",
+			"ghcr.io/d2iq-labs/csi-driver-trusted-ca",
 			"linux",
 			runtime.GOARCH,
 		)
 		Expect(ok).To(BeTrue())
-		err = docker.RetagAndPushImage(
+		err = docker.PushImageToDifferentRegistry(
 			ctx,
 			img.Name,
-			fmt.Sprintf("%s/%s", e2eConfig.Registry.HostPortAddress, img.Name),
+			e2eConfig.Registry.HostPortAddress,
 			env.DockerHubUsername(),
 			env.DockerHubPassword(),
 		)
@@ -201,7 +201,7 @@ func imageFromTestRegistry(img reference.NamedTagged) reference.NamedTagged {
 }
 
 func testPodImage(flavour string) reference.NamedTagged {
-	img, err := reference.ParseNormalizedNamed("d2iq-labs/csi-driver-trusted-ca-test")
+	img, err := reference.ParseNormalizedNamed("ghcr.io/d2iq-labs/csi-driver-trusted-ca-test")
 	Expect(err).NotTo(HaveOccurred())
 	imgTagged, err := reference.WithTag(img, flavour)
 	Expect(err).NotTo(HaveOccurred())

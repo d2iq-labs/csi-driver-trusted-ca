@@ -14,6 +14,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/distribution/distribution/v3/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -137,9 +138,9 @@ func ForceDeleteContainer(ctx context.Context, containerID string) error {
 	return nil
 }
 
-func RetagAndPushImage( //nolint:revive // Lots of args is fine in these tests.
+func PushImageToDifferentRegistry( //nolint:revive // Lots of args is fine in these tests.
 	ctx context.Context,
-	srcImage, destImage string,
+	srcImage, destRegistry string,
 	pullUsername, pullPassword string,
 ) error {
 	dClient, err := ClientFromEnv()
@@ -178,6 +179,14 @@ func RetagAndPushImage( //nolint:revive // Lots of args is fine in these tests.
 		}
 		_, _ = io.Copy(io.Discard, out)
 	}
+
+	srcRef, err := reference.ParseNormalizedNamed(srcImage)
+	if err != nil {
+		return fmt.Errorf("failed to parse source image name: %w", err)
+	}
+	srcTagged := srcRef.(reference.Tagged)
+
+	destImage := fmt.Sprintf("%s/%s:%s", destRegistry, reference.Path(srcRef), srcTagged.Tag())
 
 	if err := dClient.ImageTag(ctx, srcImage, destImage); err != nil {
 		return fmt.Errorf("failed to retag image: %w", err)
