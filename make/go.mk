@@ -171,6 +171,6 @@ go-mod-upgrade: install-tool.golang install-tool.go.go-mod-upgrade ; $(info $(M)
 build-e2e-images:
 	$(foreach dockerfile, $(wildcard ./test/e2e/testdata/dockerfiles/Dockerfile.*), \
 		docker buildx build --load -f $(dockerfile) \
-							 -t d2iq-labs/csi-driver-trusted-ca-test:$(subst Dockerfile.,,$(notdir $(dockerfile))) \
+							 -t ghcr.io/d2iq-labs/csi-driver-trusted-ca-test:$(subst Dockerfile.,,$(notdir $(dockerfile))) \
 							 ./test/e2e/testdata/dockerfiles; \
 		)

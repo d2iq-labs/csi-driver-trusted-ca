@@ -44,11 +44,11 @@ var _ = Describe("Successful",
 		BeforeAll(func(ctx SpecContext) {
 			By("Pushing e2e Docker images to registry")
 			for _, t := range []string{"ubi", "alpine", "debian", "golang"} {
-				img := fmt.Sprintf("d2iq-labs/csi-driver-trusted-ca-test:%s", t)
-				err := docker.RetagAndPushImage(
+				img := fmt.Sprintf("ghcr.io/d2iq-labs/csi-driver-trusted-ca-test:%s", t)
+				err := docker.PushImageToDifferentRegistry(
 					ctx,
 					img,
-					fmt.Sprintf("%s/%s", e2eConfig.Registry.HostPortAddress, img),
+					e2eConfig.Registry.HostPortAddress,
 					env.DockerHubUsername(),
 					env.DockerHubPassword(),
 				)

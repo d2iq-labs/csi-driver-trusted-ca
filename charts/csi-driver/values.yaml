@@ -5,7 +5,7 @@ trustedCertsSource: ""
 
 image:
   # -- Target image repository.
-  repository: d2iq-labs/csi-driver-trusted-ca
+  repository: ghcr.io/d2iq-labs/csi-driver-trusted-ca
   # -- Target image version tag.
   tag:
   # -- Kubernetes imagePullPolicy on csi-driver.
