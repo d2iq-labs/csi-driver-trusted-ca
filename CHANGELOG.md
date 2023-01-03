@@ -3,6 +3,17 @@
 <!-- Release notes generated using configuration in .github/release.yaml at main -->
 
 ## What's Changed
+### Other Changes
+* ci: Fix release process order by @jimmidyson in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/27
+
+
+**Full Changelog**: https://github.com/d2iq-labs/csi-driver-trusted-ca/compare/v0.1.0...v0.1.1
+
+## Changelog
+
+<!-- Release notes generated using configuration in .github/release.yaml at main -->
+
+## What's Changed
 ### Exciting New Features 🎉
 * feat: Add test certs source by @jimmidyson in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/7
 * feat: Add configmap and secret sources by @jimmidyson in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/8
