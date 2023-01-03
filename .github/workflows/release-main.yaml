@@ -71,12 +71,6 @@ jobs:
           version: ${{ fromJson(steps.versions.outputs.tools).helm }}
 
       - if: ${{ steps.release-please.outputs.release_created }}
-        name: Install Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: ${{ fromJson(steps.versions.outputs.tools).helm }}
-
-      - if: ${{ steps.release-please.outputs.release_created }}
         name: Package Helm chart
         run: |
           rm -rf .cr-release-packages
@@ -85,7 +79,7 @@ jobs:
 
       - if: ${{ steps.release-please.outputs.release_created }}
         name: Publish Helm chart
-        uses: helm/chart-releaser-action@v1
+        uses: helm/chart-releaser-action@main
         with:
           skip_packaging: true
         env:
