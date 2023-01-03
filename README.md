@@ -6,7 +6,7 @@
 # Trusted CAs CSI Driver
 
 ![GitHub](https://img.shields.io/github/license/d2iq-labs/csi-driver-trusted-ca?style=for-the-badge)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/d2iq-labs/csi-driver-trusted-ca/checks?style=for-the-badge)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/d2iq-labs/csi-driver-trusted-ca/checks.yml?branch=main&style=for-the-badge)
 
 :warning: ***This project is an early prototype and subject to change. It is not yet suitable for production use.***
 
