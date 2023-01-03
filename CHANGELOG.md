@@ -2,6 +2,17 @@
 
 <!-- Release notes generated using configuration in .github/release.yaml at main -->
 
+## What's Changed
+### Fixes 🔧
+* fix: try to fix helm chart publish on release again by @jimmidyson in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/33
+
+
+**Full Changelog**: https://github.com/d2iq-labs/csi-driver-trusted-ca/compare/v0.1.4...v0.1.5
+
+## Changelog
+
+<!-- Release notes generated using configuration in .github/release.yaml at main -->
+
 
 
 **Full Changelog**: https://github.com/d2iq-labs/csi-driver-trusted-ca/compare/v0.1.3...v0.1.4
