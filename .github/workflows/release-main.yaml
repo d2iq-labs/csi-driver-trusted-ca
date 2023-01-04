@@ -42,7 +42,7 @@ jobs:
 
       - if: ${{ steps.release-please.outputs.release_created }}
         name: Install asdf
-        uses: asdf-vm/actions/setup@v1
+        uses: asdf-vm/actions/setup@master
 
       - if: ${{ steps.release-please.outputs.release_created }}
         name: Login to ghcr.io
