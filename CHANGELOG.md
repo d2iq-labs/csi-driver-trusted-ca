@@ -3,6 +3,17 @@
 <!-- Release notes generated using configuration in .github/release.yaml at main -->
 
 ## What's Changed
+### Other Changes
+* ci: Use latest asdf actions to remove deprecation warning by @jimmidyson in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/36
+
+
+**Full Changelog**: https://github.com/d2iq-labs/csi-driver-trusted-ca/compare/v0.1.5...v0.1.6
+
+## Changelog
+
+<!-- Release notes generated using configuration in .github/release.yaml at main -->
+
+## What's Changed
 ### Fixes 🔧
 * fix: try to fix helm chart publish on release again by @jimmidyson in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/33
 
