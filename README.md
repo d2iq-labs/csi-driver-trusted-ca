@@ -73,30 +73,24 @@ oras push <YOUR_REGISTRY>/trusted-ca-certs:v1 certificate-bundle.tar:application
 
 ## Deployment
 
-The container images and Helm chart are currently not released, but you can build them yourself via:
+You can install or upgrade the CSI driver via Helm.
 
-```shell
-make release-snapshot
-```
-
-You then need to re-tag image:
+Add the published Helm repo:
 
 ```bash
-docker tag ghcr.io/d2iq-labs/csi-driver-trusted-ca:v0.1.0-dev <YOUR_REGISTRY>/d2iq-labs/csi-driver-trusted-ca:v0.1.0-dev
+helm repo add csi-driver-trusted-ca https://d2iq-labs.github.io/csi-driver-trusted-ca/
 ```
 
-And push it to your registry:
+Check what versions are available:
 
 ```bash
-docker push <YOUR_REGISTRY>/d2iq-labs/csi-driver-trusted-ca:v0.1.0-dev
+helm search repo csi-driver-trusted-ca
 ```
 
-You can then install or upgrade the CSI driver via Helm:
+Install the Helm chart:
 
 ```bash
-helm upgrade --install csi-driver-trusted-ca ./charts/csi-driver \
+helm upgrade --install csi-driver-trusted-ca csi-driver-trusted-ca/csi-driver-trusted-ca \
   --namespace kube-system \
-  --set-string image.repository=<YOUR_REGISTRY>/d2iq-labs/csi-driver-trusted-ca \
-  --set-string image.tag=v0.1.0-dev \
   --set-string trustedCertsSource=<SOURCE>
 ```
