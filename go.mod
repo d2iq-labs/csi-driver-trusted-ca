@@ -13,7 +13,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/go-logr/logr v1.2.3
 	github.com/imdario/mergo v0.3.13
-	github.com/klauspost/compress v1.15.13
+	github.com/klauspost/compress v1.15.14
 	github.com/kubernetes-csi/csi-lib-utils v0.11.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/onsi/ginkgo/v2 v2.6.1
