@@ -16,7 +16,7 @@ require (
 	github.com/klauspost/compress v1.15.14
 	github.com/kubernetes-csi/csi-lib-utils v0.12.0
 	github.com/mholt/archiver/v3 v3.5.1
-	github.com/onsi/ginkgo/v2 v2.6.1
+	github.com/onsi/ginkgo/v2 v2.7.0
 	github.com/onsi/gomega v1.24.2
 	github.com/opencontainers/image-spec v1.1.0-rc2
 	github.com/pkg/errors v0.9.1
