@@ -30,8 +30,8 @@ jobs:
       with:
         languages: ${{ matrix.language }}
 
-    - name: Install tools via asdf
-      uses: asdf-vm/actions/install@master
+    - name: Install asdf
+      uses: asdf-vm/actions/setup@master
 
     - name: Build
       run: make build-snapshot
