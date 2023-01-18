@@ -3,6 +3,25 @@
 <!-- Release notes generated using configuration in .github/release.yaml at main -->
 
 ## What's Changed
+### Other Changes
+* ci: Use latest asdf actions to remove deprecation warning by @jimmidyson in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/36
+* build(deps): Bump github.com/onsi/gomega from 1.24.1 to 1.24.2 by @dependabot in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/37
+* build(deps): Bump oras.land/oras-go from 1.2.1 to 1.2.2 by @dependabot in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/38
+* build(deps): Bump github.com/containerd/containerd from 1.6.14 to 1.6.15 by @dependabot in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/39
+* build(deps): Bump github.com/klauspost/compress from 1.15.13 to 1.15.14 by @dependabot in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/41
+* build(deps): Bump github.com/kubernetes-csi/csi-lib-utils from 0.11.0 to 0.12.0 by @dependabot in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/40
+* build(deps): Bump github.com/onsi/ginkgo/v2 from 2.6.1 to 2.7.0 by @dependabot in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/43
+* build(deps): Bump google.golang.org/grpc from 1.51.0 to 1.52.0 by @dependabot in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/42
+* ci: Do not install asdf plugins in codeql workflow, just asdf by @jimmidyson in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/44
+
+
+**Full Changelog**: https://github.com/d2iq-labs/csi-driver-trusted-ca/compare/v0.1.5...v0.1.6
+
+## Changelog
+
+<!-- Release notes generated using configuration in .github/release.yaml at main -->
+
+## What's Changed
 ### Fixes 🔧
 * fix: try to fix helm chart publish on release again by @jimmidyson in https://github.com/d2iq-labs/csi-driver-trusted-ca/pull/33
 
