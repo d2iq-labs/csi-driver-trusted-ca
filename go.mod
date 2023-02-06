@@ -23,7 +23,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	go.uber.org/multierr v1.9.0
-	google.golang.org/grpc v1.52.0
+	google.golang.org/grpc v1.52.3
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.11.0
 	k8s.io/api v0.26.1
