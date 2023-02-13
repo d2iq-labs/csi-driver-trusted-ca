@@ -7,7 +7,7 @@ go 1.19
 
 require (
 	github.com/container-storage-interface/spec v1.7.0
-	github.com/containerd/containerd v1.6.16
+	github.com/containerd/containerd v1.6.17
 	github.com/distribution/distribution/v3 v3.0.0-20221208165359-362910506bc2
 	github.com/docker/docker v20.10.22+incompatible
 	github.com/docker/go-connections v0.4.0
